@@ -35,7 +35,7 @@ function speakers = load_speakers_mono(dataDirectory, trainingCount, testCount, 
                    
                    for k=1:length(chosen_indices)
                        file = allSubSubFiles(chosen_indices(k)).name;
-                       display(file);
+                       %display(file);
                        file_path = strcat(dataDirectory ,'/', type, '/', speaker_name, '/',file);
                        [file_content, original_freq] = audioread(file_path);
                        if size(file_content,2) > 1
@@ -45,6 +45,7 @@ function speakers = load_speakers_mono(dataDirectory, trainingCount, testCount, 
                        file_content = pad_mirror(file_content,Npad);
                        if k <= trainingCount
                            speakers(speaker_index).trainingSignals{k} = file_content;
+                           
                        else
                            speakers(speaker_index).testSignals{(length(speakers(speaker_index).testSignals)+1)} = file_content;
                        end

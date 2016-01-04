@@ -3,7 +3,7 @@
 
 %%% Training Params
 trainingCount = 100;
-testingCount = 50;
+testingCount = 1;
 
 
 % General params
@@ -68,6 +68,7 @@ mkdir(resultsSaveDirectory);
 
 
 save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
+
 %% Generate the speakers matrix
 
 speakers = load_training_test_data(dataDirectory, trainingCount, testingCount, fs, Npad);
@@ -100,7 +101,7 @@ end
 
 [stds1, stds2] = calculate_stds(scattsSaveDirectory);
 
-save(strcat(paramsSaveDirectory, 'renorm_params.mat', 'stds1', 'stds2'), 'stds1','stds2');
+save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
 
 %% Creating the NMF dictionaries
@@ -139,7 +140,7 @@ resultsIndex = 1;
 for i=1:size(speakers,2)
     
     % Load dictionaries of the first speaker
-    [Dnmf11, Dnmf21] = get_speaker_dictionaries(speakers(i).name, dictionariesSaveDirectory);
+    [Dnmf11, Dnmf21] = get_dictionaries(speakers(i).name, dictionariesSaveDirectory);
     
     for j=1:size(speakers(i).fullTesting,2)
         
@@ -148,7 +149,7 @@ for i=1:size(speakers,2)
         for k=i+1:size(speakers,2)
 
             % Load dictionaries of the second speaker
-            [Dnmf12, Dnmf22] = get_dictionaries(speakers(i).name, dictionariesSaveDirectory);
+            [Dnmf12, Dnmf22] = get_dictionaries(speakers(k).name, dictionariesSaveDirectory);
             
             for l=1:size(speakers(k).fullTesting,2)
                 
@@ -184,6 +185,7 @@ for i=1:size(speakers,2)
                 results(resultsIndex).bss_results_lvl1 = bss_scatt1;
                 results(resultsIndex).bss_results_lvl2 = bss_scatt2;
                 
+                display(strcat('finished result: ', int2str(resultsIndex)));
                 resultsIndex = resultsIndex + 1;
 
             end
@@ -191,3 +193,32 @@ for i=1:size(speakers,2)
 
     end
 end
+
+%%
+save(strcat(resultsSaveDirectory,'results.mat'), 'results','-v7.3')
+
+
+%%
+test_index = 4;
+
+%%
+soundsc(results(test_index).speaker1_original, fs);
+
+%%
+
+soundsc(results(test_index).speaker2_original, fs);
+
+%%
+
+soundsc(results(test_index).speaker1_reconstructed_lvl2, fs);
+
+%%
+
+soundsc(results(test_index).speaker2_reconstructed_lvl2, fs);
+        
+%%
+
+results(test_index).bss_results_lvl1
+
+
+results(test_index).bss_results_lvl2

@@ -184,3 +184,13 @@ end
 %%%
 
 [lvl2_speaker_list, lvl1_speaker_list] = demix_scatt2top_multi(testMix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
+
+result.speech_list = speech_list;
+result.lvl1_speech_list = lvl_1_speach_list;
+
+save(strcat(resultsSaveDirectory,'results.mat'), 'result')
+
+%% 
+soundsc(sources(:,5),fs);
+%%
+soundsc(speech_list{5},fs) 

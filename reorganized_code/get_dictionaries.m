@@ -1,4 +1,4 @@
-function [ Dnmf1, Dnmf2 ] = get_speaker_dictionaries( speakerName, dictionaryDirectory )
+function [ Dnmf1, Dnmf2 ] = get_dictionaries( speakerName, dictionaryDirectory )
 % Gets the dictionaries (1st and 2nd level) of a specific speaker
 
     allDictionaryFiles = dir(dictionaryDirectory);
