@@ -9,7 +9,7 @@ testingCount = 1;
 % General params
 eps=1e-3;
 fs = 16000; % resample freq
-Npad = 2^19; % max size of audio clip
+Npad = 2^18; % max size of audio clip (size of fort minor source is 793801x1)
 
 
 %%% Scattering Params
@@ -51,8 +51,8 @@ param2.batchsize=512;
 
 
 % setting up output directories
-dataDirectory = '../data/MASS/bearlin-roads (pop-rock)/bearlin-roads_0-28';
-saveDirectory = strcat('final/mass/bearlin/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_nIter_',int2str(numberOfIterations),'_fs_',int2str(fs),'/');
+dataDirectory = '../data/MASS/fort_minor-remember_the_name (hip-hop)_pre_selected/fort_minor-remember_the_name_127-145';
+saveDirectory = strcat('final/mass/fort_minor_pre_selected/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_nIter_',int2str(numberOfIterations),'_fs_',int2str(fs),'/');
 speakersSaveDirectory = strcat(saveDirectory, 'speakers/');
 scattsSaveDirectory = strcat(saveDirectory, 'saved_scatts/');
 paramsSaveDirectory = strcat(saveDirectory, 'params/');
@@ -68,6 +68,7 @@ mkdir(resultsSaveDirectory);
 
 
 save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
+
 %% Generate the speakers matrix
 
 [sourcesL,sourcesR,sourceNameList,mixL,mixR,trainingFs,nbits] = loadSources(dataDirectory,0);
@@ -76,7 +77,9 @@ sources = [];
 
 for i=1:size(sourceNameList,1)
     file_content = ((sourcesL(:,i) + sourcesR(:,i))/2);
+    size(file_content)
     file_content = resample(file_content,fs, trainingFs);
+    size(file_content)
     file_content = pad_mirror(file_content,Npad);
     sources = [sources file_content];
 end
@@ -136,13 +139,15 @@ for i=1:length(allScattFiles)
 end
 
 
-%%% Testing
+%% Testing
 
 % load testing file
-testDirectory = '../data/MASS/bearlin-roads (pop-rock)/bearlin-roads_85-99';
+testDirectory = '../data/MASS/fort_minor-remember_the_name (hip-hop)_pre_selected/fort_minor-remember_the_name_199-204';
 
 [testSourcesL,testSourcesR,testSourceNameList,testMixL,testMixR,testingFs,nbits] = loadSources(testDirectory,0);
 
+
+%%
 testSources = [];
 
 for i=1:size(testSourceNameList,1)
@@ -152,7 +157,7 @@ for i=1:size(testSourceNameList,1)
     testSources = [testSources file_content];
 end
 
-testMix = (testMixL + testMixR) / 2;
+testMix = (testSources(:,1) + testSources(:,2));
 
 %%%
 
@@ -181,16 +186,33 @@ for i=1:length(allDictionaryFiles)
     end
 end
 
-%%%
-
-[lvl2_speaker_list, lvl1_speaker_list] = demix_scatt2top_multi(testMix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
-
-result.speech_list = speech_list;
-result.lvl1_speech_list = lvl_1_speach_list;
-
-save(strcat(resultsSaveDirectory,'results.mat'), 'result')
-
-%% 
-soundsc(sources(:,5),fs);
 %%
-soundsc(speech_list{5},fs) 
+
+[lvl2_speech_list, lvl1_speech_list] = demix_scatt2top_multi(testMix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
+
+
+%%
+
+result = struct;
+result.lvl1_speech_list = lvl1_speech_list;
+result.lvl2_speech_list = lvl2_speech_list;
+result.mix = testMix;
+result.sources = testSources;
+result.sourceNames = speaker_name_list;
+
+
+result.bss_results_lvl1  =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl1_speech_list{1}', lvl1_speech_list{2}', testMix);
+result.bss_results_lvl2 =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl2_speech_list{1}', lvl2_speech_list{2}', testMix);
+
+save(strcat(resultsSaveDirectory, 'results.mat'), 'result');
+%%
+
+soundsc(testMix,fs);
+
+%%
+
+soundsc(lvl2_speech_list{1},fs);
+
+%%
+
+soundsc(lvl2_speech_list{2},fs);
