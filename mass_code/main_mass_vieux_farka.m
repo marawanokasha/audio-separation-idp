@@ -9,7 +9,7 @@ testingCount = 1;
 % General params
 eps=1e-3;
 fs = 16000; % resample freq
-Npad = 2^18; % max size of audio clip (size of fort minor source is 793801x1)
+Npad = 2^19; % max size of audio clip (size of vieux farka source is 1102501x1) but we downsample
 
 
 %%% Scattering Params
@@ -51,8 +51,8 @@ param2.batchsize=512;
 
 
 % setting up output directories
-dataDirectory = '../data/MASS/fort_minor-remember_the_name (hip-hop)_pre_selected/fort_minor-remember_the_name_127-145';
-saveDirectory = strcat('final/mass/fort_minor_pre_selected/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_nIter_',int2str(numberOfIterations),'_fs_',int2str(fs),'/');
+dataDirectory = '../data/MASS/vieux_farka_toure-ana (rock-reggae-blues)/vieux_farka_toure-ana_30-55';
+saveDirectory = strcat('final/mass/vieux_farka/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_nIter_',int2str(numberOfIterations),'_fs_',int2str(fs),'/');
 speakersSaveDirectory = strcat(saveDirectory, 'speakers/');
 scattsSaveDirectory = strcat(saveDirectory, 'saved_scatts/');
 paramsSaveDirectory = strcat(saveDirectory, 'params/');
@@ -83,7 +83,7 @@ for i=1:size(sourceNameList,1)
     file_content = pad_mirror(file_content,Npad);
     sources = [sources file_content];
 end
-     
+        
 save(strcat(speakersSaveDirectory, 'speakers_resampled.mat'), 'sources')
 
 %% Creating the scatt matrices
@@ -104,7 +104,7 @@ for i=1:size(sourceNameList,1)
 end
 
 
-%%% Calculating the standard deviations for later normalization
+%% Calculating the standard deviations for later normalization
 
 [stds1, stds2] = calculate_stds(scattsSaveDirectory);
 
@@ -143,7 +143,7 @@ end
 %% Testing
 
 % load testing file
-testDirectory = '../data/MASS/fort_minor-remember_the_name (hip-hop)_pre_selected/fort_minor-remember_the_name_199-204';
+testDirectory = '../data/MASS/vieux_farka_toure-ana (rock-reggae-blues)/vieux_farka_toure-ana_201-213';
 
 [testSourcesL,testSourcesR,testSourceNameList,testMixL,testMixR,testingFs,nbits] = loadSources(testDirectory,0);
 
@@ -158,7 +158,9 @@ for i=1:size(testSourceNameList,1)
     testSources = [testSources file_content];
 end
 
-testMix = (testSources(:,1) + testSources(:,2));
+testMix = (testMixL + testMixR) / 2;
+testMix = resample(testMix,fs, testingFs);
+testMix = pad_mirror(testMix,Npad);
 
 %%%
 
@@ -212,7 +214,7 @@ soundsc(testMix,fs);
 
 %%
 
-soundsc(lvl2_speech_list{1},fs);
+soundsc(lvl2_speech_list{6},fs);
 
 %%
 
