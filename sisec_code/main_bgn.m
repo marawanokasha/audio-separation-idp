@@ -51,7 +51,7 @@ param2.batchsize=512;
 
 
 % setting up output directories
-dataDirectory = '../data/sisec/bgn';
+dataDirectory = '../data/sisec/bgn/training';
 saveDirectory = strcat('final/sisec/bgn/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_fs_',int2str(fs),'/');
 speakersSaveDirectory = strcat(saveDirectory, 'speakers/');
 scattsSaveDirectory = strcat(saveDirectory, 'saved_scatts/');
@@ -226,9 +226,9 @@ soundsc(lvl2_speech_list{3}, fs)
 %% Testing
 %%% testing with all test files and using BSS
 
-testDirectory = '../data/sisec/bgn/test/';
-testSourcesDirectory = '../data/sisec/bgn/test-speaker-sources/';
-testNoisesDirectory = '../data/sisec/bgn/test-noise-sources/';
+testDirectory = '../data/sisec/bgn/test/test/';
+testSourcesDirectory = '../data/sisec/bgn/test/test-speaker-sources/';
+testNoisesDirectory = '../data/sisec/bgn/test/test-noise-sources/';
 
 allTestFiles = dir(testDirectory);
 results = [];
@@ -238,7 +238,7 @@ result_index = 1;
 for i=1:length(allTestFiles)
     % make sure it's a directory but not the . or .. directory
     if allTestFiles(i).isdir == false && strncmp(allTestFiles(i).name,'.',1) == 0
-        file_name = allTestFiles(i).name;
+        file_name = allTestFiles(i).name
         ind = strfind(file_name, '_');
         
         file_path = strcat(testDirectory, file_name);
@@ -307,12 +307,87 @@ for i=1:length(allTestFiles)
         results(result_index).bss_sig_results_lvl1 = bss_sig_results_lvl1;
         results(result_index).bss_sig_results_lvl2 = bss_sig_results_lvl2;
         
+        display(strcat('Finished  test file: ', int2str(result_index)));
         result_index = result_index+1;
-        display(strcat('Finished speaker: ', int2str(result_index)));
     end
 end
 
 save(strcat(resultsSaveDirectory,'results.mat'), 'results','-v7.3')
+
+%%
+% mix_name='Ca1'; % covers both male and female
+% mix_name='Ca2'; % covers both male and female
+% mix_name='Sq1'; % covers both male and female
+% mix_name='Sq2'; % covers both male and female
+% mix_name='Su1'; % covers both male and female
+mix_name='Su2'; % covers both male and female
+
+avg_bss = struct;
+avg_bss.lvl1_DAO_SDR = 0;
+avg_bss.lvl1_DAO_SIR = 0;
+avg_bss.lvl1_DAO_SAR = 0;
+avg_bss.lvl2_DAO_SDR = 0;
+avg_bss.lvl2_DAO_SIR = 0;
+avg_bss.lvl2_DAO_SAR = 0;
+
+avg_bss.lvl1_sig_SDRi = 0;
+avg_bss.lvl1_sig_ISRi = 0;
+avg_bss.lvl1_sig_SIRi = 0;
+avg_bss.lvl1_sig_SARi = 0;
+avg_bss.lvl2_sig_SDRi = 0;
+avg_bss.lvl2_sig_ISRi = 0;
+avg_bss.lvl2_sig_SIRi = 0;
+avg_bss.lvl2_sig_SARi = 0;
+count = 0;
+for i=1:length(results)
+    if strfind(results(i).file_name, mix_name)
+        
+        bss_DAO_results_lvl1 = results(i).bss_DAO_results_lvl1;
+        bss_DAO_results_lvl2 = results(i).bss_DAO_results_lvl2;
+        bss_sig_results_lvl1 = results(i).bss_sig_results_lvl1;
+        bss_sig_results_lvl2 = results(i).bss_sig_results_lvl2;
+       
+        avg_bss.lvl1_DAO_SDR = avg_bss.lvl1_DAO_SDR + bss_DAO_results_lvl1.SDR;
+        avg_bss.lvl1_DAO_SIR = avg_bss.lvl1_DAO_SIR + bss_DAO_results_lvl1.SIR;
+        avg_bss.lvl1_DAO_SAR = avg_bss.lvl1_DAO_SAR + bss_DAO_results_lvl1.SAR;
+        
+        avg_bss.lvl2_DAO_SDR = avg_bss.lvl2_DAO_SDR + bss_DAO_results_lvl2.SDR;
+        avg_bss.lvl2_DAO_SIR = avg_bss.lvl2_DAO_SIR + bss_DAO_results_lvl2.SIR;
+        avg_bss.lvl2_DAO_SAR = avg_bss.lvl2_DAO_SAR + bss_DAO_results_lvl2.SAR;
+
+        avg_bss.lvl1_sig_SDRi = avg_bss.lvl1_sig_SDRi + bss_sig_results_lvl1.SDRi;
+        avg_bss.lvl1_sig_ISRi = avg_bss.lvl1_sig_ISRi + bss_sig_results_lvl1.ISRi;
+        avg_bss.lvl1_sig_SIRi = avg_bss.lvl1_sig_SIRi + bss_sig_results_lvl1.SIRi;
+        avg_bss.lvl1_sig_SARi = avg_bss.lvl1_sig_SARi + bss_sig_results_lvl1.SARi;
+        
+        avg_bss.lvl2_sig_SDRi = avg_bss.lvl2_sig_SDRi + bss_sig_results_lvl2.SDRi;
+        avg_bss.lvl2_sig_ISRi = avg_bss.lvl2_sig_ISRi + bss_sig_results_lvl2.ISRi;
+        avg_bss.lvl2_sig_SIRi = avg_bss.lvl2_sig_SIRi + bss_sig_results_lvl2.SIRi;
+        avg_bss.lvl2_sig_SARi = avg_bss.lvl2_sig_SARi + bss_sig_results_lvl2.SARi;
+        count = count +1;
+    end
+end
+
+avg_bss.lvl1_DAO_SDR = avg_bss.lvl1_DAO_SDR / count;
+avg_bss.lvl1_DAO_SIR = avg_bss.lvl1_DAO_SIR / count;
+avg_bss.lvl1_DAO_SAR = avg_bss.lvl1_DAO_SAR / count;
+
+avg_bss.lvl2_DAO_SDR = avg_bss.lvl2_DAO_SDR / count;
+avg_bss.lvl2_DAO_SIR = avg_bss.lvl2_DAO_SIR / count;
+avg_bss.lvl2_DAO_SAR = avg_bss.lvl2_DAO_SAR / count;
+
+        
+avg_bss.lvl1_sig_SDRi = avg_bss.lvl1_sig_SDRi / count;
+avg_bss.lvl1_sig_ISRi = avg_bss.lvl1_sig_ISRi / count;
+avg_bss.lvl1_sig_SIRi = avg_bss.lvl1_sig_SIRi / count;
+avg_bss.lvl1_sig_SARi = avg_bss.lvl1_sig_SARi / count;
+
+avg_bss.lvl2_sig_SDRi = avg_bss.lvl2_sig_SDRi / count;
+avg_bss.lvl2_sig_ISRi = avg_bss.lvl2_sig_ISRi / count;
+avg_bss.lvl2_sig_SIRi = avg_bss.lvl2_sig_SIRi / count;
+avg_bss.lvl2_sig_SARi = avg_bss.lvl2_sig_SARi / count;
+
+save(strcat(resultsSaveDirectory, strcat('avg_results_', mode,'_', mix_name, '.mat')), 'avg_bss','-v7.3');
 
 %%
 soundsc(test_file_content, fs);

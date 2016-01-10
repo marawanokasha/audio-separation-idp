@@ -3,7 +3,7 @@
 
 %%% Training Params
 trainingCount = 100;
-testingCount = 1;
+testingCount = 5;
 
 
 % General params
@@ -176,11 +176,11 @@ for i=1:size(speakers,2)
                 results(resultsIndex).speaker1_original = x1 ;
                 results(resultsIndex).speaker2_original = x2 ;
                 
-                results(resultsIndex).speaker1_reconstructed_lvl1 = speech1 ;
-                results(resultsIndex).speaker2_reconstructed_lvl1 = speech2 ;
+                results(resultsIndex).speaker1_reconstructed_lvl2 = speech1 ;
+                results(resultsIndex).speaker2_reconstructed_lvl2 = speech2 ;
                 
-                results(resultsIndex).speaker1_reconstructed_lvl2 = xest1;
-                results(resultsIndex).speaker2_reconstructed_lvl2 = xest2;
+                results(resultsIndex).speaker1_reconstructed_lvl1 = xest1;
+                results(resultsIndex).speaker2_reconstructed_lvl1 = xest2;
                 
                 results(resultsIndex).bss_results_lvl1 = bss_scatt1;
                 results(resultsIndex).bss_results_lvl2 = bss_scatt2;
@@ -222,3 +222,152 @@ results(test_index).bss_results_lvl1
 
 
 results(test_index).bss_results_lvl2
+
+
+
+%% Testing
+%%% For 3 speakers
+
+results = [];
+resultsIndex = 1;
+for i=1:size(speakers,2)
+    
+    % Load dictionaries of the first speaker
+    [Dnmf11, Dnmf21] = get_dictionaries(speakers(i).name, dictionariesSaveDirectory);
+    
+    for j=1:size(speakers(i).fullTesting,2)
+        
+        x1 = speakers(i).fullTesting(:,j)'; T1 = length(x1 );
+        
+        for k=i+1:size(speakers,2)
+
+            % Load dictionaries of the second speaker
+            [Dnmf12, Dnmf22] = get_dictionaries(speakers(k).name, dictionariesSaveDirectory);
+            
+            for l=1:size(speakers(k).fullTesting,2)
+                
+                x2 = speakers(k).fullTesting(:,l)'; T2 = length(x2);
+                
+                for m=k+1:size(speakers,2)
+
+                    % Load dictionaries of the third speaker
+                    [Dnmf13, Dnmf23] = get_dictionaries(speakers(m).name, dictionariesSaveDirectory);
+
+                    for n=1:size(speakers(m).fullTesting,2)
+
+                        x3 = speakers(m).fullTesting(:,n)'; T3 = length(x3);
+
+                        % create the mixture
+                        T = min([T1,T2,T3,Npad]);
+                        x1 = x1(1:T);
+                        x2 = x2(1:T);
+                        x3 = x3(1:T);
+                        mix = (x1+x2+x3);
+                        
+                        Dnmf1_list = {};
+                        Dnmf2_list = {};
+
+                        Dnmf1_list = [Dnmf1_list Dnmf11 Dnmf12 Dnmf13];
+                        Dnmf2_list = [Dnmf2_list Dnmf21 Dnmf22 Dnmf23];           
+
+                        [lvl2_speech_list, lvl1_speech_list] = demix_scatt2top_multi(mix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
+
+                        results(resultsIndex).speaker1 = speakers(i).name;
+                        results(resultsIndex).speaker2 = speakers(k).name;
+                        results(resultsIndex).speaker3 = speakers(m).name;
+
+                        results(resultsIndex).speaker1_file = speakers(i).testingFileNames{j} ;
+                        results(resultsIndex).speaker2_file = speakers(k).testingFileNames{l} ;
+                        results(resultsIndex).speaker3_file = speakers(m).testingFileNames{n} ;
+                        
+                        results(resultsIndex).mix = mix;
+                        results(resultsIndex).speaker1_original = x1 ;
+                        results(resultsIndex).speaker2_original = x2 ;
+                        results(resultsIndex).speaker3_original = x3 ;
+            
+                        results(resultsIndex).speaker1_reconstructed_lvl1 = lvl1_speech_list{1};
+                        results(resultsIndex).speaker2_reconstructed_lvl1 = lvl1_speech_list{2};
+                        results(resultsIndex).speaker3_reconstructed_lvl1 = lvl1_speech_list{3};
+
+                        results(resultsIndex).speaker1_reconstructed_lvl2 = lvl2_speech_list{1};
+                        results(resultsIndex).speaker2_reconstructed_lvl2 = lvl1_speech_list{2};
+                        results(resultsIndex).speaker3_reconstructed_lvl2 = lvl1_speech_list{3};
+
+                        display(strcat('finished result: ', int2str(resultsIndex)));
+                        resultsIndex = resultsIndex + 1;
+                        break;
+                    end
+                    break;
+                end
+                break;
+            end
+            break;
+        end
+        break;
+
+    end
+    break;
+end
+
+%save(strcat(resultsSaveDirectory,'results_3speakers.mat'), 'results','-v7.3')
+
+%%
+soundsc(mix,fs);
+
+%%
+soundsc(results(1).speaker3_reconstructed_lvl2,fs);
+%%
+soundsc(results(7).speaker2_reconstructed_lvl2, fs)
+
+
+%% Testing
+%%% For 3 speakers (selected speakers)
+
+results = [];
+resultsIndex = 1;
+
+
+% Load dictionaries of the first speaker
+[Dnmf11, Dnmf21] = get_dictionaries('s1', dictionariesSaveDirectory);
+speaker1 = get_speaker(speakers, 's1');
+
+% Load dictionaries of the second speaker
+[Dnmf12, Dnmf22] = get_dictionaries('s2', dictionariesSaveDirectory);
+speaker2 = get_speaker(speakers, 's2');
+
+% Load dictionaries of the third speaker
+[Dnmf13, Dnmf23] = get_dictionaries('s7', dictionariesSaveDirectory);
+speaker3 = get_speaker(speakers, 's7');
+
+Dnmf1_list = {};
+Dnmf2_list = {};
+
+Dnmf1_list = [Dnmf1_list Dnmf11 Dnmf12 Dnmf13];
+Dnmf2_list = [Dnmf2_list Dnmf21 Dnmf22 Dnmf23];           
+
+x1 = speaker1.fullTesting(:,1)'; T1 = length(x1 );
+x2 = speaker2.fullTesting(:,1)'; T2 = length(x2);
+x3 = speaker3.fullTesting(:,1)'; T3 = length(x3);
+
+% create the mixture
+T = min([T1,T2,T3,Npad]);
+x1 = x1(1:T);
+x2 = x2(1:T);
+x3 = x3(1:T);
+mix = (x1+x2+x3);
+
+soundsc(mix,fs);
+
+%%
+soundsc(x1,fs);
+%%
+soundsc(x2,fs);
+%%
+soundsc(x3,fs);
+%%
+[lvl2_speech_list, lvl1_speech_list] = demix_scatt2top_multi(mix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
+
+%save(strcat(resultsSaveDirectory,'results_3speakers.mat'), 'results','-v7.3')
+
+%%
+soundsc(lvl2_speech_list{3}, fs)

@@ -1,5 +1,5 @@
 function speakers = load_speakers_mono(dataDirectory, trainingCount, testCount, resample_freq, Npad)
-    %%% Loads speakers in the data directory provided and converts an
+    %%% Loads speakers in the data directory provided and converts any
     %%% stereo sounds to mono
     
     randomSeed = 1234;

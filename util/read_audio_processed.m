@@ -1,6 +1,6 @@
 function [ file_content ] = read_audio_processed( file_path, resample_freq, Npad )
 %READ_AUDIO_PROCESSED reads audio and applies resampling, mono-channeling
-%and padding as necessary
+%and padding as necessary and returns a column vector
 
 [file_content, original_freq] = audioread(file_path);
 if size(file_content,2) > 1
