@@ -67,7 +67,7 @@ mkdir(dictionariesSaveDirectory);
 mkdir(resultsSaveDirectory);
 
 
-save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
+%save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
 
 %% Generate the speakers matrix
 
@@ -104,14 +104,14 @@ for i=1:size(sourceNameList,1)
 end
 
 
-%%% Calculating the standard deviations for later normalization
+%% Calculating the standard deviations for later normalization
 
 [stds1, stds2] = calculate_stds(scattsSaveDirectory);
 
-save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
+%save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
 
-%%% Creating the NMF dictionaries
+%% Creating the NMF dictionaries
 
 allScattFiles = dir(scattsSaveDirectory);
 
@@ -208,6 +208,60 @@ result.bss_results_lvl1  =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl1_sp
 result.bss_results_lvl2 =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl2_speech_list{1}', lvl2_speech_list{2}', testMix);
 
 save(strcat(resultsSaveDirectory, 'results.mat'), 'result');
+
+
+%% Testing and generating BSS for all training sources
+
+lvl1_speech_mat = [];
+lvl2_speech_mat = [];
+for k=1:length(lvl2_speech_list)
+    lvl1_speech_mat = [lvl1_speech_mat; lvl1_speech_list{k}];
+    lvl2_speech_mat = [lvl2_speech_mat; lvl2_speech_list{k}];
+end
+
+ % these are the corresponding indices in the test set to the sources in
+ % the training set
+test_corresponding_indices = [1 2];
+
+source_mat = [];
+for i=1:length(test_corresponding_indices)
+    index = test_corresponding_indices(i);
+    
+    source_mat = [source_mat; testSources(:,index)'];
+end
+
+% measuring signal separation
+[SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort(lvl1_speech_mat,source_mat);
+[SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
+
+
+%% Testing and generating BSS for just the vocals
+
+vocals_index = 2;
+
+all_non_vocals_source = 0;
+all_non_vocals_reconst_lvl1 = 0;
+all_non_vocals_reconst_lvl2 = 0;
+
+for i=1:size(lvl2_speech_list,2)
+    display(strcat('===========',int2str(i)));
+    if i ~= vocals_index
+        display('1');
+        all_non_vocals_source = all_non_vocals_source + testSources(:,i);
+        display('2');
+        all_non_vocals_reconst_lvl1 = all_non_vocals_reconst_lvl1 + lvl1_speech_list{i}';
+        display('3');
+        all_non_vocals_reconst_lvl2 = all_non_vocals_reconst_lvl1 + lvl2_speech_list{i}';
+        display('4');
+    end
+end
+display('llkjdflkdjfsl');
+
+
+% evaluate results
+bss_scatt2 =  BSS_EVAL(testSources(:,vocals_index), all_non_vocals_source, lvl2_speech_list{vocals_index}', all_non_vocals_reconst_lvl2 , testMix);
+bss_scatt1 =  BSS_EVAL(testSources(:,vocals_index), all_non_vocals_source, lvl1_speech_list{vocals_index}', all_non_vocals_reconst_lvl1 , testMix);
+
 %%
 
 soundsc(testMix,fs);

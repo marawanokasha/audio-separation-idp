@@ -9,7 +9,7 @@ testingCount = 1;
 % General params
 eps=1e-3;
 fs = 16000; % resample freq
-Npad = 2^19; % max size of audio clip (size of vieux farka source is 1102501x1) but we downsample
+Npad = 2^18; % max size of audio clip (size of vieux farka source is 1102501x1) but we downsample
 
 
 %%% Scattering Params
