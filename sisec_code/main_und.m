@@ -24,10 +24,10 @@ options.parallel = 1;
 
 
 %%% NMF Params
-dictionaryAtomsX1 = 400;
-dictionaryAtomsX2 = 1600;
+dictionaryAtomsX1 = 200;
+dictionaryAtomsX2 = 800;
 lambda = 0.1;
-numberOfIterations = 2000;
+numberOfIterations = 500;
 
 % Params for X1: 1st level scattering
 param1.K = [dictionaryAtomsX1];
@@ -52,7 +52,7 @@ param2.batchsize=512;
 
 % setting up output directories
 dataDirectory = '../data/sisec/und/training';
-saveDirectory = strcat('final/sisec/und/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_Npad_',int2str(Npad),'_fs_',int2str(fs),'/');
+saveDirectory = strcat('final/sisec/und/','T_',int2str(T),'_D1_',int2str(dictionaryAtomsX1),'_D2_',int2str(dictionaryAtomsX2),'_nIter_',int2str(numberOfIterations),'_Npad_',int2str(Npad),'_fs_',int2str(fs),'/');
 speakersSaveDirectory = strcat(saveDirectory, 'speakers/');
 scattsSaveDirectory = strcat(saveDirectory, 'saved_scatts/');
 paramsSaveDirectory = strcat(saveDirectory, 'params/');
@@ -97,14 +97,16 @@ for i=1:size(speakers,2)
 end
 
 
-%%% Calculating the standard deviations for later normalization
+%% Calculating the standard deviations for later normalization
 
-[stds1, stds2] = calculate_stds(scattsSaveDirectory);
+speakers_to_consider = {'f1','f2','f3'};
+
+[stds1, stds2] = calculate_stds(scattsSaveDirectory, speakers_to_consider);
 
 save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
 
-%%% Creating the NMF dictionaries
+%% Creating the NMF dictionaries
 
 allScattFiles = dir(scattsSaveDirectory);
 
@@ -112,6 +114,11 @@ allScattFiles = dir(scattsSaveDirectory);
 for i=1:length(allScattFiles)
     % make sure it's a directory but not the . or .. directory
     if allScattFiles(i).isdir == false && strncmp(allScattFiles(i).name,'.',1) == 0
+        
+        % make sure it's one of the speakers we want to use
+        if length(strmatch(get_speaker_name_from_file(allScattFiles(i).name), speakers_to_consider)) == 0
+            continue;
+        end
         
         fileName = allScattFiles(i).name;
         load(strcat(scattsSaveDirectory, fileName));
