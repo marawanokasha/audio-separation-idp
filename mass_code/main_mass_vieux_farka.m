@@ -208,6 +208,33 @@ result.bss_results_lvl1  =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl1_sp
 result.bss_results_lvl2 =  BSS_EVAL(testSources(:,1), testSources(:,2), lvl2_speech_list{1}', lvl2_speech_list{2}', testMix);
 
 save(strcat(resultsSaveDirectory, 'results.mat'), 'result');
+
+%% Testing and generating BSS for all training sources
+
+lvl1_speech_mat = [];
+lvl2_speech_mat = [];
+for k=1:length(lvl2_speech_list)
+    lvl1_speech_mat = [lvl1_speech_mat; lvl1_speech_list{k}];
+    lvl2_speech_mat = [lvl2_speech_mat; lvl2_speech_list{k}];
+end
+
+ % these are the corresponding indices in the test set to the sources in
+ % the training set
+test_corresponding_indices = [1 2];
+
+source_mat = [];
+source_mat = [source_mat; testSources(:,1)'];
+source_mat = [source_mat; lvl2_speech_list{2}];
+source_mat = [source_mat; testSources(:,2)'];
+source_mat = [source_mat; testSources(:,3)'];
+source_mat = [source_mat; lvl2_speech_list{5}];
+source_mat = [source_mat; lvl2_speech_list{6}];
+source_mat = [source_mat; testSources(:,4)'];
+
+% measuring signal separation
+[SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort(lvl1_speech_mat,source_mat);
+[SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
+
 %%
 
 soundsc(testMix,fs);
