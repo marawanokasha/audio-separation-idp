@@ -233,6 +233,14 @@ end
 [SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
 
 
+
+%% Writing out sample results
+
+resultsDirectory = '../results_audio/mass/fort_minor/';
+
+wavwrite(result.sources(:,5), fs, strcat(resultsDirectory,'vocal_original.wav'));
+wavwrite(result.lvl2_speech_list{3}, fs, strcat(resultsDirectory,'vocal_reconstructed.wav'));
+
 %% Testing and generating BSS for just the vocals
 
 vocals_index = 3;
