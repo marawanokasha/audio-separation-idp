@@ -14,9 +14,10 @@ Npad = 2^17; % max size of audio clip
 
 %%% Scattering Params
 T = 2048;
+Q = 32;
 scparam.N = Npad;
 scparam.T = T;
-scparam.Q = 32;
+scparam.Q = Q;
 filts = create_scattfilters( scparam );
 
 options.renorm=1;
@@ -67,7 +68,7 @@ mkdir(dictionariesSaveDirectory);
 mkdir(resultsSaveDirectory);
 
 
-save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
+%save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
 
 %% Generate the speakers matrix
 
@@ -99,11 +100,13 @@ end
 
 %% Calculating the standard deviations for later normalization
 
-speakers_to_consider = {'f1','f2','f3'};
+%speakers_to_consider = {'f1','f2','f3'};
+%[stds1, stds2] = calculate_stds(scattsSaveDirectory, speakers_to_consider);
+%save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
-[stds1, stds2] = calculate_stds(scattsSaveDirectory, speakers_to_consider);
+[stds1, stds2] = calculate_stds(scattsSaveDirectory);
 
-save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
+%save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
 
 %% Creating the NMF dictionaries
@@ -177,6 +180,135 @@ soundsc(lvl2_speech_list{2}, fs)
 %%
 soundsc(lvl2_speech_list{3}, fs)
 
+%%
+
+testSourcesDirectory = '../data/sisec/und/test/test-speaker-sources/';
+source_mat = []; % used in bss
+allSourceFiles = dir(testSourcesDirectory);
+
+ind = strfind(testFileName, 'mix.wav');
+prefix = testFileName(1:ind-1);
+
+% Getting the speakers to be used for this mix
+for j=1:length(allSourceFiles)
+    source_file_name = allSourceFiles(j).name;
+    if strfind(source_file_name, prefix)
+        source_file_path = strcat(testSourcesDirectory, source_file_name);
+        source_file_content = read_audio_processed(source_file_path,fs,Npad);
+        source_mat = [source_mat; source_file_content'];
+    end
+end
+
+
+lvl1_speech_mat = [];
+lvl2_speech_mat = [];
+for k=1:length(lvl2_speech_list)
+    lvl1_speech_mat = [lvl1_speech_mat; lvl1_speech_list{k}];
+    lvl2_speech_mat = [lvl2_speech_mat; lvl2_speech_list{k}];
+end
+% measuring signal separation
+[SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort(lvl1_speech_mat,source_mat);
+[SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
+
+
+
+%% Testing
+%%% Using predefined dictionaries for 3 speakers and on doing manual
+%%% mix
+
+sourcePath1 = '../data/sisec/und/training/female/f1/dev1_female3_inst_sim_1.wav';
+sourcePath2 = '../data/sisec/und/training/female/f2/dev1_female3_inst_sim_2.wav';
+sourcePath3 = '../data/sisec/und/training/female/f3/dev1_female3_inst_sim_3.wav';
+
+source1 = read_audio_processed(sourcePath1,fs,Npad);
+source2 = read_audio_processed(sourcePath2,fs,Npad);
+source3 = read_audio_processed(sourcePath3,fs,Npad);
+
+
+% create the mixture
+mix = (source1+source2+source3);
+%%
+soundsc(mix,fs);
+
+%%
+soundsc(source1, fs);
+%%
+soundsc(source2, fs);
+%%
+soundsc(source3, fs);
+%%
+Dnmf1_list = {};
+Dnmf2_list = {};
+
+[Dnmf11, Dnmf21] = get_dictionaries('f1', dictionariesSaveDirectory);
+[Dnmf12, Dnmf22] = get_dictionaries('f2', dictionariesSaveDirectory);
+[Dnmf13, Dnmf23] = get_dictionaries('f3', dictionariesSaveDirectory);
+ 
+Dnmf1_list = [Dnmf1_list Dnmf11 Dnmf12 Dnmf13];
+Dnmf2_list = [Dnmf2_list Dnmf21 Dnmf22 Dnmf23];           
+
+[lvl2_speech_list, lvl1_speech_list] = demix_scatt2top_multi(mix, Dnmf1_list, Dnmf2_list, stds1, stds2, eps, filts, scparam, param1, param2, Npad);
+
+display('Finished demix')
+
+source_mat = [source1';source2';source3'];
+
+lvl1_speech_mat = [];
+lvl2_speech_mat = [];
+for k=1:length(lvl2_speech_list)
+    lvl1_speech_mat = [lvl1_speech_mat; lvl1_speech_list{k}];
+    lvl2_speech_mat = [lvl2_speech_mat; lvl2_speech_list{k}];
+end
+
+% measuring signal separation
+[SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort(lvl1_speech_mat,source_mat);
+[SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
+
+%%
+soundsc(mix, fs);
+
+%%
+soundsc(lvl2_speech_list{1}, fs)
+
+%%
+soundsc(lvl2_speech_list{2}, fs)
+
+%%
+soundsc(lvl2_speech_list{3}, fs)
+
+%%
+
+testSourcesDirectory = '../data/sisec/und/test/test-speaker-sources/';
+source_mat = []; % used in bss
+allSourceFiles = dir(testSourcesDirectory);
+
+ind = strfind(testFileName, 'mix.wav');
+prefix = testFileName(1:ind-1);
+
+% Getting the speakers to be used for this mix
+for j=1:length(allSourceFiles)
+    source_file_name = allSourceFiles(j).name;
+    if strfind(source_file_name, prefix)
+        source_file_path = strcat(testSourcesDirectory, source_file_name);
+        source_file_content = read_audio_processed(source_file_path,fs,Npad);
+        source_mat = [source_mat; source_file_content'];
+    end
+end
+
+
+lvl1_speech_mat = [];
+lvl2_speech_mat = [];
+for k=1:length(lvl2_speech_list)
+    lvl1_speech_mat = [lvl1_speech_mat; lvl1_speech_list{k}];
+    lvl2_speech_mat = [lvl2_speech_mat; lvl2_speech_list{k}];
+end
+% measuring signal separation
+[SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort(lvl1_speech_mat,source_mat);
+[SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort(lvl2_speech_mat,source_mat);
+
+
+
+        
 %% Testing
 %%% Using all dictionaries
 
@@ -329,6 +461,29 @@ test_index = 1;
 soundsc(results(test_index).speakers_reconstructed_lvl2{1}, fs);
 %%
 soundsc(results(test_index).speakers_reconstructed_lvl2{2}, fs);
+%% Writing out sample results
+
+resultsDirectory = '../results_audio/sisec/und/';
+
+wavwrite(results(test_index).speakers_original(1,:), fs, strcat(resultsDirectory,'speaker1_original.wav'));
+wavwrite(results(test_index).speakers_original(2,:), fs, strcat(resultsDirectory,'speaker2_original.wav'));
+wavwrite(results(test_index).speakers_original(3,:), fs, strcat(resultsDirectory,'speaker3_original.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{1}, fs, strcat(resultsDirectory,'speaker1_reconstructed.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{2}, fs, strcat(resultsDirectory,'speaker2_reconstructed.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{3}, fs, strcat(resultsDirectory,'speaker3_reconstructed.wav'));
+
+%% Writing out sample results
+
+resultsDirectory = '../results_audio/sisec/und/test/';
+
+wavwrite(results(test_index).speakers_original(1,:), fs, strcat(resultsDirectory,'speaker1_original.wav'));
+wavwrite(results(test_index).speakers_original(2,:), fs, strcat(resultsDirectory,'speaker2_original.wav'));
+wavwrite(results(test_index).speakers_original(3,:), fs, strcat(resultsDirectory,'speaker3_original.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{1}, fs, strcat(resultsDirectory,'speaker1_reconstructed.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{2}, fs, strcat(resultsDirectory,'speaker2_reconstructed.wav'));
+wavwrite(results(test_index).speakers_reconstructed_lvl2{3}, fs, strcat(resultsDirectory,'speaker3_reconstructed.wav'));
+
+
 %%
 % mix_name='male3_liverec_130ms_1m'; % covers both male and female
 % mix_name='male3_liverec_130ms_5cm'; % covers both male and female

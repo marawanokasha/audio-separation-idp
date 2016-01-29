@@ -229,6 +229,7 @@ soundsc(lvl2_speech_list{3}, fs)
 testDirectory = '../data/sisec/bgn/test/test/';
 testSourcesDirectory = '../data/sisec/bgn/test/test-speaker-sources/';
 testNoisesDirectory = '../data/sisec/bgn/test/test-noise-sources/';
+mode = 'test';
 
 allTestFiles = dir(testDirectory);
 results = [];
@@ -269,6 +270,10 @@ for i=1:length(allTestFiles)
         [SDRi_lvl1,ISRi_lvl1,SIRi_lvl1,SARi_lvl1] = bss_eval_images_nosort([lvl1_speaker1;lvl1_speaker2],[test_source_file_content';test_noise_file_content']);
         [SDRi_lvl2,ISRi_lvl2,SIRi_lvl2,SARi_lvl2] = bss_eval_images_nosort([lvl2_speaker1;lvl2_speaker2],[test_source_file_content';test_noise_file_content']);
         
+        bss_scatt1 = BSS_EVAL(test_source_file_content, test_noise_file_content,lvl1_speaker1', lvl1_speaker2', test_file_content );
+        bss_scatt2 = BSS_EVAL(test_source_file_content, test_noise_file_content,lvl2_speaker1', lvl2_speaker2', test_file_content );
+        
+        
         bss_DOA_results_lvl1 = struct; bss_DOA_results_lvl2 = struct; 
         bss_DOA_results_lvl1.SDR = SDR_lvl1;
         bss_DOA_results_lvl1.SIR = SIR_lvl1;
@@ -306,6 +311,9 @@ for i=1:length(allTestFiles)
         results(result_index).bss_DAO_results_lvl2 = bss_DOA_results_lvl2;
         results(result_index).bss_sig_results_lvl1 = bss_sig_results_lvl1;
         results(result_index).bss_sig_results_lvl2 = bss_sig_results_lvl2;
+        
+        results(result_index).bss_eval_results_lvl1 = bss_scatt1;
+        results(result_index).bss_eval_results_lvl2 = bss_scatt2;
         
         display(strcat('Finished  test file: ', int2str(result_index)));
         result_index = result_index+1;
@@ -398,6 +406,9 @@ soundsc(lvl2_speaker1, fs)
 %%
 soundsc(lvl2_speaker2, fs)
 %%
+test_index = 1;
+
+%%
 
 soundsc(results(test_index).speaker2_original, fs);
 
@@ -415,3 +426,12 @@ results(test_index).bss_results_lvl1
 
 
 results(test_index).bss_results_lvl2
+
+%% Writing out sample results
+
+resultsDirectory = '../results_audio/sisec/bgn/';
+
+wavwrite(results(test_index).speaker_original, fs, strcat(resultsDirectory,'speaker1_original.wav'));
+wavwrite(results(10).speaker_original, fs, strcat(resultsDirectory,'speaker10_original.wav'));
+wavwrite(results(test_index).speaker_reconstructed_lvl2, fs, strcat(resultsDirectory,'speaker1_reconstructed.wav'));
+wavwrite(results(10).speaker_reconstructed_lvl2, fs, strcat(resultsDirectory,'speaker10_reconstructed.wav'));

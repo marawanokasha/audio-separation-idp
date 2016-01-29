@@ -24,10 +24,10 @@ options.parallel = 1;
 
 
 %%% NMF Params
-dictionaryAtomsX1 = 200;
+dictionaryAtomsX1 = 175;
 dictionaryAtomsX2 = 800;
 lambda = 0.1;
-numberOfIterations = 1000;
+numberOfIterations = 4000;
 
 % Params for X1: 1st level scattering
 param1.K = [dictionaryAtomsX1];
@@ -52,7 +52,7 @@ param2.batchsize=512;
 
 % setting up output directories
 dataDirectory = '../data/grid';
-saveDirectory = 'final/grid/';
+saveDirectory = 'final/grid_matlab/';
 speakersSaveDirectory = strcat(saveDirectory, 'speakers/');
 scattsSaveDirectory = strcat(saveDirectory, 'saved_scatts/');
 paramsSaveDirectory = strcat(saveDirectory, 'params/');
@@ -67,13 +67,13 @@ mkdir(dictionariesSaveDirectory);
 mkdir(resultsSaveDirectory);
 
 
-%save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
+save(strcat(paramsSaveDirectory, 'general_params.mat'), 'trainingCount', 'testingCount','eps','Npad','fs','param1','param2','scparam','options')
 
 %% Generate the speakers matrix
 
 speakers = load_training_test_data(dataDirectory, trainingCount, testingCount, fs, Npad);
 
-%%
+
 save(strcat(speakersSaveDirectory, 'speakers_resampled_','training_',int2str(trainingCount),'_testing_',int2str(testingCount),'.mat'), 'speakers')
 
 %%
@@ -101,7 +101,7 @@ end
 
 [stds1, stds2] = calculate_stds(scattsSaveDirectory);
 
-%save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
+save(strcat(paramsSaveDirectory, 'renorm_params.mat'), 'stds1','stds2');
 
 
 %% Creating the NMF dictionaries
@@ -123,12 +123,14 @@ for i=1:length(allScattFiles)
            data.X2 = renorm_spect_data(data.X2, stds2, eps);
         end
         
+        opts1 = statset('MaxIter',param1.iter);
+        opts2 = statset('MaxIter',param2.iter);
         % create the dictionaries
-        Dnmf1 = mexTrainDL(abs(data.X1),param1);
-        Dnmf2 = mexTrainDL(abs(data.X2),param2);
+        [Dnmf1, H1] = nnmf(abs(data.X1),param1.K, 'options', opts1);
+        [Dnmf2, H2] = nnmf(abs(data.X2),param2.K, 'options', opts2);
         
         save(strcat(dictionariesSaveDirectory,'dict_n', int2str(trainingCount), '_', fileName(strfind(fileName,'__')+2:end)),'Dnmf1','Dnmf2')
-        
+        fix(clock)
     end
 end
 
@@ -187,7 +189,6 @@ for i=1:size(speakers,2)
                 
                 display(strcat('finished result: ', int2str(resultsIndex)));
                 resultsIndex = resultsIndex + 1;
-                break;
 
             end
         end
@@ -200,7 +201,7 @@ save(strcat(resultsSaveDirectory,'results.mat'), 'results','-v7.3')
 
 
 %%
-test_index = 3;
+test_index = 12;
 
 %%
 soundsc(results(test_index).speaker1_original, fs);
@@ -223,18 +224,6 @@ results(test_index).bss_results_lvl1
 
 
 results(test_index).bss_results_lvl2
-
-%% Writing out sample results
-
-resultsDirectory = '../results_audio/grid/';
-
-wavwrite(results(test_index).speaker1_original, fs, strcat(resultsDirectory,'speaker1_original.wav'));
-wavwrite(results(test_index).speaker2_original, fs, strcat(resultsDirectory,'speaker2_original.wav'));
-wavwrite(results(test_index).speaker1_reconstructed_lvl2, fs, strcat(resultsDirectory,'speaker1_reconstructed.wav'));
-wavwrite(results(test_index).speaker2_reconstructed_lvl2, fs, strcat(resultsDirectory,'speaker2_reconstructed.wav'));
-
-mix = results(test_index).speaker1_original + results(test_index).speaker2_original;
-wavwrite(mix, fs, strcat(resultsDirectory,'mix.wav'));
 
 
 

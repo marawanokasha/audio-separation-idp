@@ -1,7 +1,7 @@
 function [speech_list, lvl_1_list] = demix_scatt2top_multi(mix, Dnmf1_list, Dnmf2_list, stds1, stds2, epsf, filts, options, param1, param2, Npad)
     % mix should be a column vector 
-    % speech_list is reconstructed sounds based on 2nd level
-    % lvl_1_list is reconstructed sounds based on 1st level
+    % speech_list is reconstructed sounds based on 2nd level (row vectors)
+    % lvl_1_list is reconstructed sounds based on 1st level (row vectors)
     
     Dnmf1_all = [];
     Dnmf2_all = [];
