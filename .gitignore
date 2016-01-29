@@ -6,7 +6,6 @@ audio_files/*
 sisec_code/saved_dicts/*
 sisec_code/saved_scatts/*
 sisec_code/output_signals/*
-old_sisec_saves/*
 *~
 *.mexa64
-lib/*
+lib/spams-matlab/*
